@@ -34,7 +34,7 @@ async function main() {
 
   const client = new BluefinClient(
     true,
-    Networks.PRODUCTION_SUI,
+    Networks.PRODUCTION_SUI,  //running in mainnet
     dummyAccountKey,
     "ED25519" //valid values are ED25519 or Secp256k1
   ); // passing isTermAccepted = true for compliance and authorization
