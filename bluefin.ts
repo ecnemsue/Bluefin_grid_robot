@@ -38,10 +38,8 @@ async function main() {
     dummyAccountKey,
     "ED25519" //valid values are ED25519 or Secp256k1
   ); // passing isTermAccepted = true for compliance and authorization
-  await client.init();
-  let symbol = "SUI-PERP";
-  
-
+await client.init();
+let symbol = configFile.symbol;
 var BidPrice=0;
 var AskPrice=0; 
 try{ 
