@@ -207,11 +207,13 @@ catch (e:any){
 }
 let flag_fin=0;
 
-if (BidPrice<lowerprice | BidPrice> upperprice){
+if (BidPrice>0 & (BidPrice<lowerprice | BidPrice> upperprice)){
 console.log('Current price is out of range:'+'['+lowerprice+','+upperprice+'], stop running');
-if (close_all_when_out_range==1){
-await client.cancelAllOpenOrders(symbol);}
- return;
+if (close_all_when_out_range==1)
+	{
+	await client.cancelAllOpenOrders(symbol);  
+	return;
+	}
 }
 
 
