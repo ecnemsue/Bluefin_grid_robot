@@ -63,7 +63,7 @@ const pricegap = configFile.pricegap;//相邻网格之间的价差
 const upperprice=lowerprice+gridnum*pricegap;//网格运行最高价格
 const sleepperiod = configFile.sleepperiod;//loop period：2.5s
 const leverage=configFile.leverage;// setting your trade leverage
-const close_all_when_out_range=1;
+const close_all_when_out_range=configFile.close_all_when_out_range; 
 var freeUSDC=0;
 var init_accountValue=0;
 
