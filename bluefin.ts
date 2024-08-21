@@ -23,9 +23,9 @@ import { setTimeout } from 'timers/promises';
 import configFile from './config_blue.json';
 
 
-function fixed(int):number{
+function fixed(int, n=4,):number{
 
-return Number(int.toFixed(4));
+return Number(int.toFixed(n));
 
 }
 
@@ -209,11 +209,21 @@ let flag_fin=0;
 
 if (BidPrice>0 & (BidPrice<lowerprice | BidPrice> upperprice)){
 console.log('Current price is out of range:'+'['+lowerprice+','+upperprice+'], stop running');
-if (close_all_when_out_range==1)
-	{
-	await client.cancelAllOpenOrders(symbol);  
-	return;
-	}
+if (close_all_when_out_range==1){
+	await client.cancelAllOpenOrders(symbol);
+	const resp1 = (await client.getExchangeInfo(symbol)).data;
+	let dem=19-(resp1.minOrderSize).length;
+	let pos = (await client.getUserPosition({ symbol: symbol})).response.data;
+	let qty= fixed(Number(pos.quantity)*10**(-18),dem);
+	await client.postOrder({
+		symbol: symbol,
+		quantity: qty,
+		side: BidPrice<lowerprice? ORDER_SIDE.SELL:ORDER_SIDE.BUY,
+		orderType: ORDER_TYPE.MARKET,
+		leverage: leverage,
+	});
+	 return;
+}
 }
 
 
