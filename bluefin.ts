@@ -21,12 +21,13 @@ import {
 } from "@bluefin-exchange/bluefin-v2-client";
 import { setTimeout } from 'timers/promises';
 import configFile from './config_blue.json';
+
+
 function fixed(int):number{
 
 return Number(int.toFixed(4));
 
 }
-
 
 async function main() {
   // no gas fee is required to create order signature.
