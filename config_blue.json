@@ -4,6 +4,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true 
   },
+  "symbol":"SUI-PERP",
   "mnemonic":"trigger swim reunion gate hen black real deer light nature trial dust",
   "lowerprice": 0.707,
   "gridnum": 65,
