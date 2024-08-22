@@ -139,7 +139,7 @@ let resp= await client.getUserOrders({
 await setTimeout(1000);
 
 while (i<gridnum){
-await setTimeout(500);
+await setTimeout(200);
 if (lowerprice+i*pricegap<BidPrice & lowerprice+i*pricegap>BidPrice*0.9){
 try {
 let res=await client.postOrder({
