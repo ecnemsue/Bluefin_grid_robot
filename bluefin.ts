@@ -103,7 +103,7 @@ console.log('free collateral in account:'+freeUSDC +' USDC');
 
 const resp1 = (await client.getExchangeInfo(symbol)).data;
 const dem=19-(resp1.minOrderSize).length;
-
+const price_decimals=19-(resp1.tickSize).length;
 
 if (((lowerprice+upperprice)*amount*gridnum)/2 > freeUSDC*leverage*0.98){
 console.log('Error: your free collateral is not enough for running this bot. It needs '+((lowerprice+upperprice)*gridnum*amount*1.02/(2*leverage))+' USDC at your leverage '+leverage+'x .');
@@ -145,7 +145,7 @@ try {
 let res=await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
-    price: fixed(lowerprice+i*pricegap),
+    price: fixed(lowerprice+i*pricegap,price_decimals),
     quantity: fixed(amount,dem),
     side: ORDER_SIDE.BUY,
     orderType: ORDER_TYPE.LIMIT,
@@ -165,7 +165,7 @@ try {
 await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
-    price: fixed(lowerprice+i*pricegap),
+    price: fixed(lowerprice+i*pricegap,price_decimals),
     quantity: fixed(amount,dem),
     side: ORDER_SIDE.SELL,
     orderType: ORDER_TYPE.LIMIT,
@@ -250,7 +250,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			let res = await client.postOrder({
 				symbol: symbol,
 				clientId: i.toString(),
-				price: fixed(lowerprice+i*pricegap),
+				price: fixed(lowerprice+i*pricegap,price_decimals),
 				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.BUY,
 				orderType: ORDER_TYPE.LIMIT,
@@ -272,7 +272,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			await client.postOrder({
 				symbol: symbol,
 				clientId: i.toString(),
-				price: fixed(lowerprice+i*pricegap),
+				price: fixed(lowerprice+i*pricegap,price_decimals),
 				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.SELL,
 				orderType: ORDER_TYPE.LIMIT,
