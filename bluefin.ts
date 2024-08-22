@@ -67,10 +67,13 @@ const close_all_when_out_range=configFile.close_all_when_out_range;
 var freeUSDC=0;
 var init_accountValue=0;
 
+
+
 await client.adjustLeverage({
     symbol:symbol,
     leverage: leverage,
   });
+
 
 
 
@@ -97,6 +100,10 @@ console.log("All open orders have been canceled.");await setTimeout(500);
 
 
 console.log('free collateral in account:'+freeUSDC +' USDC');
+
+const resp1 = (await client.getExchangeInfo(symbol)).data;
+const dem=19-(resp1.minOrderSize).length;
+
 
 if (((lowerprice+upperprice)*amount*gridnum)/2 > freeUSDC*leverage*0.98){
 console.log('Error: your free collateral is not enough for running this bot. It needs '+((lowerprice+upperprice)*gridnum*amount*1.02/(2*leverage))+' USDC at your leverage '+leverage+'x .');
@@ -139,7 +146,7 @@ let res=await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
     price: fixed(lowerprice+i*pricegap),
-    quantity: amount,
+    quantity: fixed(amount,dem),
     side: ORDER_SIDE.BUY,
     orderType: ORDER_TYPE.LIMIT,
     leverage: leverage,
@@ -159,7 +166,7 @@ await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
     price: fixed(lowerprice+i*pricegap),
-    quantity: amount,
+    quantity: fixed(amount,dem),
     side: ORDER_SIDE.SELL,
     orderType: ORDER_TYPE.LIMIT,
     leverage: leverage,
@@ -211,8 +218,6 @@ if (BidPrice>0 & (BidPrice<lowerprice | BidPrice> upperprice)){
 console.log('Current price is out of range:'+'['+lowerprice+','+upperprice+'], stop running');
 if (close_all_when_out_range==1){
 	await client.cancelAllOpenOrders(symbol);
-	const resp1 = (await client.getExchangeInfo(symbol)).data;
-	let dem=19-(resp1.minOrderSize).length;
 	let pos = (await client.getUserPosition({ symbol: symbol})).response.data;
 	let qty= fixed(Number(pos.quantity)*10**(-18),dem);
 	await client.postOrder({
@@ -246,7 +251,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 				symbol: symbol,
 				clientId: i.toString(),
 				price: fixed(lowerprice+i*pricegap),
-				quantity: amount,
+				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.BUY,
 				orderType: ORDER_TYPE.LIMIT,
 				leverage: leverage,
@@ -268,7 +273,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 				symbol: symbol,
 				clientId: i.toString(),
 				price: fixed(lowerprice+i*pricegap),
-				quantity: amount,
+				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.SELL,
 				orderType: ORDER_TYPE.LIMIT,
 				leverage: leverage,
