@@ -12,7 +12,7 @@ Text format for the file config_blue.json:
   "sleepperiod": 2500, //loop period =2.5s
   "leverage":3, //perp leverage
   "close_all_when_out_range":1,//close all positions when price is out of range
-  "equi_ratio_mode":0, // 1= shift to equivalent ratio grids mode
+  "equi_ratio_mode":0, // =1 then shift to equivalent ratio grids mode, otherwise keep the equivalent difference grids mode
   "priceratiogap":1.004,// price ratio between each grid in equivalent ratio grids mode
 </code>
 
