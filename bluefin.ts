@@ -21,12 +21,20 @@ import {
 } from "@bluefin-exchange/bluefin-v2-client";
 import { setTimeout } from 'timers/promises';
 import configFile from './config_blue.json';
-
-
-function fixed(int, n=4,):number{
-
+function fixed(int, n=4):number{
 return Number(int.toFixed(n));
+}
 
+function init_girdprice(iseqratio,gridnum,lowerprice,pricegap,priceratiogap){
+if (gridnum<=0){return;}
+
+let price:number[] = new Array(gridnum);
+let sum=0;
+for(i=0;i<gridnum;i++){
+price[i]= iseqratio==1? lowerprice*(priceratiogap**i): lowerprice+pricegap*i;
+sum+=price[i];
+}
+return [price,sum];
 }
 
 async function main() {
@@ -35,12 +43,14 @@ async function main() {
 
   const client = new BluefinClient(
     true,
-    Networks.PRODUCTION_SUI,  //running in mainnet
+    Networks.PRODUCTION_SUI,
     dummyAccountKey,
     "ED25519" //valid values are ED25519 or Secp256k1
   ); // passing isTermAccepted = true for compliance and authorization
-await client.init();
-let symbol = configFile.symbol;
+  await client.init();
+  let symbol = configFile.symbol;
+  
+
 var BidPrice=0;
 var AskPrice=0; 
 try{ 
@@ -56,24 +66,31 @@ catch (e:any){
     console.log(e,'Error at getting price')
 	 return;
 } 
+const equi_ratio_mode=configFile.equi_ratio_mode;//等比网格模式
 const lowerprice = configFile.lowerprice;//网格运行最低价格
 const gridnum = configFile.gridnum;//网格数量
 const amount = configFile.amount;//每网格下单的SUI的数量
-const pricegap = configFile.pricegap;//相邻网格之间的价差
-const upperprice=lowerprice+gridnum*pricegap;//网格运行最高价格
+const pricegap = configFile.pricegap;//相邻网格之间的价差(等差模式)
+const priceratiogap=configFile.priceratiogap;////相邻网格之间的价比(等比模式)
+const upperprice=equi_ratio_mode==1? lowerprice*(priceratiogap**gridnum) : lowerprice+gridnum*pricegap;//网格运行最高价格
 const sleepperiod = configFile.sleepperiod;//loop period：2.5s
 const leverage=configFile.leverage;// setting your trade leverage
 const close_all_when_out_range=configFile.close_all_when_out_range; 
 var freeUSDC=0;
 var init_accountValue=0;
 
+if (priceratiogap<=1 & equi_ratio_mode==1){
+console.log('Error: girds price ratio is lower than 1');
+return;
+}
+
+const [grid_price, pricesum] = init_girdprice(equi_ratio_mode,gridnum,lowerprice,pricegap,priceratiogap);
 
 
 await client.adjustLeverage({
     symbol:symbol,
     leverage: leverage,
   });
-
 
 
 
@@ -100,12 +117,8 @@ console.log("All open orders have been canceled.");await setTimeout(500);
 
 
 console.log('free collateral in account:'+freeUSDC +' USDC');
-
-const resp1 = (await client.getExchangeInfo(symbol)).data;
-const dem=19-(resp1.minOrderSize).length;
-const price_decimals=19-(resp1.tickSize).length;
 await setTimeout(600);
-if (((lowerprice+upperprice)*amount*gridnum)/2 > freeUSDC*leverage*0.98){
+if (((pricesum)*amount)/2 > freeUSDC*leverage*0.98){
 console.log('Error: your free collateral is not enough for running this bot. It needs '+((lowerprice+upperprice)*gridnum*amount*1.02/(2*leverage))+' USDC at your leverage '+leverage+'x .');
  return;
 }
@@ -120,6 +133,9 @@ console.log('Warnning: your liquidation price is lying whthin bot running range,
 
 }
 
+const resp1 = (await client.getExchangeInfo(symbol)).data;
+const dem=19-(resp1.minOrderSize).length;
+const price_decimals=19-(resp1.tickSize).length;
 
 let i=0;
 var volume=0;
@@ -140,12 +156,12 @@ await setTimeout(1000);
 
 while (i<gridnum){
 await setTimeout(200);
-if (lowerprice+i*pricegap<BidPrice & lowerprice+i*pricegap>BidPrice*0.9){
+if (grid_price[i]<BidPrice & grid_price[i]>BidPrice*0.9){
 try {
 let res=await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
-    price: fixed(lowerprice+i*pricegap,price_decimals),
+    price: fixed(grid_price[i],price_decimals),
     quantity: fixed(amount,dem),
     side: ORDER_SIDE.BUY,
     orderType: ORDER_TYPE.LIMIT,
@@ -160,12 +176,12 @@ let res=await client.postOrder({
     console.log("Error:", e);
   }
 }
-if (lowerprice+i*pricegap>AskPrice & lowerprice+i*pricegap<AskPrice*1.1){
+if (grid_price[i]>AskPrice & grid_price[i]<AskPrice*1.1){
 try {
 await client.postOrder({
     symbol: symbol,
 	clientId: i.toString(),
-    price: fixed(lowerprice+i*pricegap,price_decimals),
+    price: fixed(grid_price[i],price_decimals),
     quantity: fixed(amount,dem),
     side: ORDER_SIDE.SELL,
     orderType: ORDER_TYPE.LIMIT,
@@ -183,7 +199,7 @@ await setTimeout(2000);
  order_list=(await client.getUserOrders({
   statuses: [ORDER_STATUS.OPEN, ORDER_STATUS.PARTIAL_FILLED]
 })).data;
-const re = /(\w+)\s(\w+)/; 
+
 let list_index=0;
 while (list_index<order_list.length){
 let str=order_list[list_index].clientId;
@@ -216,11 +232,11 @@ catch (e:any){
 }
 let flag_fin=0;
 
-if (BidPrice>0 & (BidPrice<lowerprice | BidPrice> upperprice)){
+if ( BidPrice>0 & (BidPrice<lowerprice | BidPrice> upperprice)){
 console.log('Current price is out of range:'+'['+lowerprice+','+upperprice+'], stop running');
 if (close_all_when_out_range==1){
 	await client.cancelAllOpenOrders(symbol);
-	let pos = (await client.getUserPosition({ symbol: symbol})).response.data;
+	let pos = (await client.getUserPosition({symbol: symbol})).response.data;
 	let qty= fixed(Number(pos.quantity)*10**(-18),dem);
 	await client.postOrder({
 		symbol: symbol,
@@ -237,30 +253,31 @@ if (close_all_when_out_range==1){
 if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 	i=0;
 	while (i<gridnum){
-		if ((lowerprice+i*pricegap<AskPrice & orderstates[i]==-1)| ( orderstates[i]==1 & lowerprice+i*pricegap>BidPrice)|(order_Hash[i]=='0' & orderstates[i]!=0 & lowerprice+i*pricegap<AskPrice*1.07 & lowerprice+i*pricegap>BidPrice*0.93)){
-		volume+=amount*(lowerprice+i*pricegap);
-		console.log((orderstates[i]==1?"Bid Order:":"Ask Order:")+(lowerprice+i*pricegap)+", Id="+order_Hash[i]+" has been finished, total volume:"+volume);
+		if ((grid_price[i]<AskPrice & orderstates[i]==-1)| ( orderstates[i]==1 & grid_price[i]>BidPrice)|(order_Hash[i]=='0' & orderstates[i]!=0 & grid_price[i]<AskPrice*1.07 & grid_price[i]>BidPrice*0.93)){
+		volume+=amount*(grid_price[i]);
+		console.log((orderstates[i]==1?"Bid Order:":"Ask Order:")+(grid_price[i])+", Id="+order_Hash[i]+" has been finished, total volume:"+volume);
+		
 		orderstates[i]=0;
 		flag_fin=1;
-		if (Math.abs(lowerprice+i*pricegap-BidPrice)<Math.abs(lastfinishnum-BidPrice)| flag_fin==0){
+		if (Math.abs(grid_price[i]-BidPrice)<Math.abs(lastfinishnum-BidPrice)| flag_fin==0){
 			lastfinishnum=i;
 		}
 		}
-		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-lowerprice-i*pricegap>pricegap| BidPrice-lowerprice-i*pricegap>pricegap*0.4 &orderstates[i+1]==0)& lowerprice+i*pricegap>BidPrice*0.9){
+		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-lowerprice-i*pricegap>pricegap| BidPrice-lowerprice-i*pricegap>pricegap*0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
 		  try {
 			await setTimeout(500);
 			let res = await client.postOrder({
 				symbol: symbol,
 				clientId: i.toString(),
-				price: fixed(lowerprice+i*pricegap,price_decimals),
+				price: fixed(grid_price[i],price_decimals),
 				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.BUY,
 				orderType: ORDER_TYPE.LIMIT,
 				leverage: leverage,
 			});
 			orderstates[i]=1;
+			console.log("Pleaced Bid Order:"+(grid_price[i])+", current best bid price:"+BidPrice);
 			order_Hash[i]='unknown';
-			console.log("Pleaced Bid Order:"+(lowerprice+i*pricegap)+", current best bid price:"+BidPrice);
 			if (res.ok==false){
 			console.log(res);
 			}
@@ -269,13 +286,13 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			console.log("Error:", e);
 		  }
 		}
-		if (orderstates[i]==0 & i!=lastfinishnum   & i-1>=0 & ((lowerprice+i*pricegap-AskPrice>pricegap)| (lowerprice+i*pricegap-AskPrice>pricegap*0.4 & orderstates[i-1]==0)) & lowerprice+i*pricegap<AskPrice*1.1){
+		if (orderstates[i]==0 & i!=lastfinishnum   & i-1>=0 & ((grid_price[i]-AskPrice>pricegap)| (grid_price[i]-AskPrice>pricegap*0.4 & orderstates[i-1]==0)) & grid_price[i]<AskPrice*1.1){
 		 try {
 			await setTimeout(500);
 			await client.postOrder({
 				symbol: symbol,
 				clientId: i.toString(),
-				price: fixed(lowerprice+i*pricegap,price_decimals),
+				price: fixed(grid_price[i],price_decimals),
 				quantity: fixed(amount,dem),
 				side: ORDER_SIDE.SELL,
 				orderType: ORDER_TYPE.LIMIT,
@@ -283,7 +300,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			});
 			orderstates[i]=-1;
 			order_Hash[i]='unknown';
-			console.log("Pleaced Ask Order:"+(lowerprice+i*pricegap)+", current best ask price:"+AskPrice);
+			console.log("Pleaced Ask Order:"+(grid_price[i])+", current best ask price:"+AskPrice);
 			flag=1;
 		 } catch (e) {
 			console.log("Error:", e);
