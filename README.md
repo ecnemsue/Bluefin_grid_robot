@@ -11,7 +11,9 @@ Text format for the file config_blue.json:
   "pricegap": 0.004,  //smallest price difference between grids
   "sleepperiod": 2500, //loop period =2.5s
   "leverage":3, //perp leverage
-  "close_all_when_out_range":1
+  "close_all_when_out_range":1,//close all positions when price is out of range
+  "equi_ratio_mode":0, // 1= shift to equivalent ratio grids mode
+  "priceratiogap":1.004,// price ratio between each grid in equivalent ratio grids mode
 </code>
 
 
