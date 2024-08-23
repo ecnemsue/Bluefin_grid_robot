@@ -12,6 +12,7 @@
   "pricegap": 0.004,
   "sleepperiod": 2500,
   "leverage":3,
-  "close_all_when_out_range":1
-
+  "close_all_when_out_range":1,
+  "equi_ratio_mode":0,
+  "priceratiogap":1.004
 }
