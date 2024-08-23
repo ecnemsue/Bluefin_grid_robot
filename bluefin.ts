@@ -257,6 +257,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 				leverage: leverage,
 			});
 			orderstates[i]=1;
+			order_Hash[i]='unknown';
 			console.log("Pleaced Bid Order:"+(lowerprice+i*pricegap)+", current best bid price:"+BidPrice);
 			if (res.ok==false){
 			console.log(res);
@@ -279,6 +280,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 				leverage: leverage,
 			});
 			orderstates[i]=-1;
+			order_Hash[i]='unknown';
 			console.log("Pleaced Ask Order:"+(lowerprice+i*pricegap)+", current best ask price:"+AskPrice);
 			flag=1;
 		 } catch (e) {
