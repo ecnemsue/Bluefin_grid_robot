@@ -104,7 +104,7 @@ console.log('free collateral in account:'+freeUSDC +' USDC');
 const resp1 = (await client.getExchangeInfo(symbol)).data;
 const dem=19-(resp1.minOrderSize).length;
 const price_decimals=19-(resp1.tickSize).length;
-await setTimeout(200);
+await setTimeout(600);
 if (((lowerprice+upperprice)*amount*gridnum)/2 > freeUSDC*leverage*0.98){
 console.log('Error: your free collateral is not enough for running this bot. It needs '+((lowerprice+upperprice)*gridnum*amount*1.02/(2*leverage))+' USDC at your leverage '+leverage+'x .');
  return;
