@@ -205,7 +205,9 @@ let resp=  await client.getOrderbook({
   
  BidPrice=fixed(Number(resp.data.bestBidPrice)*10**(-18));
  AskPrice=fixed(Number(resp.data.bestAskPrice)*10**(-18));
-  console.log('BidPrice:'+BidPrice+',AskPrice:'+AskPrice);
+	if (loopcount%5==0){
+	  console.log('BidPrice:'+BidPrice+',AskPrice:'+AskPrice);
+	}
 }
 catch (e:any){
     console.log(e,'Network error at getting price');
