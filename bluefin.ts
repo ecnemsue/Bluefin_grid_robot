@@ -200,7 +200,7 @@ await client.postOrder({
 }
 i+=1;
 }
-console.log('Grid orders created successfully, range ['+lowerprice+','+upperprice+'], grid number:'+gridnum+', each grid trade amount:'+amount+', price gap:'+pricegap);
+console.log('Grid orders created successfully, range ['+lowerprice+','+upperprice+'], grid number:'+gridnum+', each grid trade amount:'+amount+(equi_ratio_mode? ', price ratio:'+priceratiogap:', price gap:'+pricegap));
 await setTimeout(2000);
  order_list=(await client.getUserOrders({
   statuses: [ORDER_STATUS.OPEN, ORDER_STATUS.PARTIAL_FILLED]
