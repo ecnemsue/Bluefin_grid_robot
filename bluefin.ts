@@ -339,13 +339,15 @@ if (flag==1 | loopcount%30==0){
 		 order_list=(await client.getUserOrders({
 		  statuses: [ORDER_STATUS.OPEN, ORDER_STATUS.PARTIAL_FILLED]
 		})).data;
-		let list_index=0;
-		order_Hash = new Array(gridnum).fill('0');
-		while (list_index<order_list.length){
-		let str=order_list[list_index].clientId;
-		let newstr = (str.split(" ",2))[1];
-		order_Hash[Number(newstr)]=order_list[list_index].hash;
-		list_index+=1;
+		if (order_list.length>0){
+			let list_index=0;
+			order_Hash = new Array(gridnum).fill('0');
+			while (list_index<order_list.length){
+			let str=order_list[list_index].clientId;
+			let newstr = (str.split(" ",2))[1];
+			order_Hash[Number(newstr)]=order_list[list_index].hash;
+			list_index+=1;
+			}
 		}
 		}catch (e:any){
 				console.log(e,'Error at getting account data')
