@@ -25,13 +25,13 @@ function fixed(int, n=4):number{
 return Number(int.toFixed(n));
 }
 
-function init_girdprice(iseqratio,gridnum,lowerprice,pricegap,priceratiogap){
+function init_girdprice(iseqratio,gridnum,lowerprice,pricegap,priceratiogap,decimals){
 if (gridnum<=0){return;}
 
 let price:number[] = new Array(gridnum);
 let sum=0;
-for(i=0;i<gridnum;i++){
-price[i]= iseqratio==1? lowerprice*(priceratiogap**i): lowerprice+pricegap*i;
+for(let i=0;i<gridnum;i++){
+price[i]= fixed(iseqratio==1? lowerprice*(priceratiogap**i): lowerprice+pricegap*i,decimals);
 sum+=price[i];
 }
 return [price,sum];
@@ -84,7 +84,15 @@ console.log('Error: girds price ratio is lower than 1');
 return;
 }
 
-const [grid_price, pricesum] = init_girdprice(equi_ratio_mode,gridnum,lowerprice,pricegap,priceratiogap);
+
+const resp1 = (await client.getExchangeInfo(symbol)).data;//获取交易对信息
+const dem=19-(resp1.minOrderSize).length;//数量精度
+const price_decimals=19-(resp1.tickSize).length;//价格精度
+
+
+
+//初始化价格数组
+const [grid_price, pricesum] = init_girdprice(equi_ratio_mode,gridnum,lowerprice,pricegap,priceratiogap,price_decimals);
 
 
 await client.adjustLeverage({
@@ -133,9 +141,7 @@ console.log('Warnning: your liquidation price is lying whthin bot running range,
 
 }
 
-const resp1 = (await client.getExchangeInfo(symbol)).data;
-const dem=19-(resp1.minOrderSize).length;
-const price_decimals=19-(resp1.tickSize).length;
+
 
 let i=0;
 var volume=0;
@@ -240,9 +246,10 @@ if (close_all_when_out_range==1){
 	let qty= fixed(Number(pos.quantity)*10**(-18),dem);
 	await client.postOrder({
 		symbol: symbol,
+		price:BidPrice<lowerprice?0:99,
 		quantity: qty,
 		side: BidPrice<lowerprice? ORDER_SIDE.SELL:ORDER_SIDE.BUY,
-		orderType: ORDER_TYPE.MARKET,
+		orderType: ORDER_TYPE.LIMIT,
 		leverage: leverage,
 	});
 	 return;
@@ -253,6 +260,20 @@ if (close_all_when_out_range==1){
 if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 	i=0;
 	while (i<gridnum){
+		if (order_Hash[i]!='0'& orderstates[i]!=0&(grid_price[i]>AskPrice*1.12 | grid_price[i]<BidPrice*0.88)){
+		try {
+		let resp_cancel = await client.postCancelOrder({
+        symbol: 'SUI-PERP', hashes : [order_Hash[i]], });
+		console.log(resp_cancel);
+		await setTimeout(500);
+		orderstates[i]=0;
+		order_Hash[i]='0';
+		}catch (e) {
+			console.log(e,"\n Error at canceling orders");
+		}
+		
+		
+		}
 		if ((grid_price[i]<AskPrice & orderstates[i]==-1)| ( orderstates[i]==1 & grid_price[i]>BidPrice)|(order_Hash[i]=='0' & orderstates[i]!=0 & grid_price[i]<AskPrice*1.07 & grid_price[i]>BidPrice*0.93)){
 		volume+=amount*(grid_price[i]);
 		console.log((orderstates[i]==1?"Bid Order:":"Ask Order:")+(grid_price[i])+", Id="+order_Hash[i]+" has been finished, total volume:"+volume);
@@ -263,7 +284,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			lastfinishnum=i;
 		}
 		}
-		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-lowerprice-i*pricegap>pricegap| BidPrice-lowerprice-i*pricegap>pricegap*0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
+		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-grid_price[i]>pricegap| BidPrice-grid_price[i]>pricegap*0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
 		  try {
 			await setTimeout(500);
 			let res = await client.postOrder({
