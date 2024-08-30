@@ -280,7 +280,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 		
 		orderstates[i]=0;
 		flag_fin=1;
-		if (Math.abs(grid_price[i]-BidPrice)<Math.abs(lastfinishnum-BidPrice)| flag_fin==0){
+		if (Math.abs(grid_price[i]-BidPrice)<Math.abs(grid_price[lastfinishnum]-BidPrice)| flag_fin==0){
 			lastfinishnum=i;
 		}
 		}
