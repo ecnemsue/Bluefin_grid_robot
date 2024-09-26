@@ -279,10 +279,10 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 		console.log((orderstates[i]==1?"Bid Order:":"Ask Order:")+(grid_price[i])+", Id="+order_Hash[i]+" has been finished, total volume:"+volume);
 		
 		orderstates[i]=0;
-		flag_fin=1;
 		if (Math.abs(grid_price[i]-BidPrice)<Math.abs(grid_price[lastfinishnum]-BidPrice)| flag_fin==0){
 			lastfinishnum=i;
 		}
+		flag_fin=1;
 		}
 		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-grid_price[i]>pricegap| BidPrice-grid_price[i]>pricegap*0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
 		  try {
