@@ -284,7 +284,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 		}
 		flag_fin=1;
 		}
-		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-grid_price[i]>pricegap| BidPrice-grid_price[i]>pricegap*0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
+		if (orderstates[i]==0 & i!=lastfinishnum & i+1<gridnum & (BidPrice-grid_price[i]>pricegap| BidPrice-grid_price[i]>pricegap*-0.4 &orderstates[i+1]==0)& grid_price[i]>BidPrice*0.9){
 		  try {
 			await setTimeout(500);
 			let res = await client.postOrder({
@@ -307,7 +307,7 @@ if (BidPrice>lowerprice-pricegap & AskPrice<upperprice+pricegap){
 			console.log("Error:", e);
 		  }
 		}
-		if (orderstates[i]==0 & i!=lastfinishnum   & i-1>=0 & ((grid_price[i]-AskPrice>pricegap)| (grid_price[i]-AskPrice>pricegap*0.4 & orderstates[i-1]==0)) & grid_price[i]<AskPrice*1.1){
+		if (orderstates[i]==0 & i!=lastfinishnum   & i-1>=0 & ((grid_price[i]-AskPrice>pricegap)| (grid_price[i]-AskPrice>pricegap*-0.4 & orderstates[i-1]==0)) & grid_price[i]<AskPrice*1.1){
 		 try {
 			await setTimeout(500);
 			await client.postOrder({
